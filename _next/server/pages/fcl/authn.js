@@ -621,6 +621,10 @@ const CustomInputComponent = (_ref) => {
     })]
   });
 };
+// EXTERNAL MODULE: ./pages/api/accounts/new.ts
+var accounts_new = __webpack_require__(5470);
+// EXTERNAL MODULE: ./pages/api/accounts/[address]/update.ts
+var update = __webpack_require__(7065);
 ;// CONCATENATED MODULE: ./components/AccountForm.tsx
 
 
@@ -670,29 +674,19 @@ function AccountForm({
         setSubmitting
       }) => {
         setErrors([]);
-        const url = account.address ? constants/* paths.apiAccountUpdate */.Hb.apiAccountUpdate(account.address) : constants/* paths.apiAccountsNew */.Hb.apiAccountsNew;
-        const data = {
-          address: account.address,
-          label,
-          scopes: Array.from(scopes)
-        };
-        fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(data)
-        }).then(d => d.json()).then(resp => {
-          if (resp.errors) throw Error(resp.errors);
-          const isNew = !account.address;
-          (0,external_swr_.mutate)(constants/* paths.apiAccounts */.Hb.apiAccounts).then(() => {
-            setSubmitting(false);
-            onSubmitComplete(isNew ? resp.address : undefined);
-          });
-        }).catch(e => {
-          setErrors([e.message]);
+        setSubmitting(true);
+
+        if (account.address) {
+          //update
+          (0,update.default)(account.address, label, Array.from(scopes));
+          onSubmitComplete(undefined);
           setSubmitting(false);
-        });
+        } else {
+          //new
+          (0,accounts_new.default)(label, Array.from(scopes));
+          onSubmitComplete(undefined);
+          setSubmitting(false);
+        }
       },
       children: ({
         values,
@@ -1401,7 +1395,7 @@ module.exports = require("theme-ui/jsx-runtime");
 var __webpack_require__ = require("../../webpack-runtime.js");
 __webpack_require__.C(exports);
 var __webpack_exec__ = (moduleId) => (__webpack_require__(__webpack_require__.s = moduleId))
-var __webpack_exports__ = __webpack_require__.X(0, [38,496,903,437,403,352], () => (__webpack_exec__(5684)));
+var __webpack_exports__ = __webpack_require__.X(0, [38,496,903,437,403,352,470,65], () => (__webpack_exec__(5684)));
 module.exports = __webpack_exports__;
 
 })();
