@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>window.fcl.Vanilla</h2>
+
+
+
+<div>
+	<button onclick="getLatestBlock()" >Get Latest Block </button>
+	<div id='blockResponse'></div>
+</div>
+
+<br/><br/>
+
+<div>
+	<input id='account' value='5555a83349295167' placeholder="Enter Flow address">
+	<button onclick="getAccount()" >Lookup Account </button>
+	<div id='getAccounResponse'></div>
+</div>
+
+<br/><br/>
+
+
+<div>
+	<textarea id='script'>
+		pub fun main(): Int {
+ 			 return 42 + 6
+		}
+	</textarea>
+	<button onclick="runScript()" >Run Script</button>
+	<div id='runScriptResponse'></div>
+</div>
+
+
+<br/><br/>
+
+
+<div>
+	
+	<button onclick="window.fcl.authenticate()" >Login</button>
+	<button onclick="window.fcl.unauthenticate()" >Logout</button>
+
+	<div id='loginResponse'></div>
+</div>
+
+
+<br/><br/>
+
+<div>
+	<textarea id='transaction'>
+transaction {
+  execute {
+    log("A transaction happened")
+  }
+}
+    </textarea>
+	<button onclick="sendTransaction()" >Send Transaction</button>
+	<div id='sendTransactionResponse'></div>
+    
+
+
+</div>
+
+
+<script src="fcl.js"></script>
+
+<script>
+window.fcl.config()
+  .put("accessNode.api", "http://localhost:8080")
+  .put("challenge.handshake", "https://bluesign.github.io/dev-wallet-static/_next/server/pages/fcl/authn.html")
+
+window.fcl.currentUser().subscribe(user => showUser({...user}))
+
+var showUser = function(user){
+	console.log(user);
+	
+	    document.getElementById('loginResponse').innerText = JSON.stringify(user);
+}
+var getLatestBlock = async function() {
+    const response = await window.fcl.send([
+      window.fcl.getLatestBlock(),
+    ]);
+    var r  = await window.fcl.decode(response);
+    document.getElementById('blockResponse').innerText = JSON.stringify(r);
+}
+
+var getAccount = async function() {
+    const response = await window.fcl.send([
+      window.fcl.getAccount(document.getElementById('account').value),
+    ]);
+    var r  = await window.fcl.decode(response);
+    document.getElementById('getAccounResponse').innerText = JSON.stringify(r);
+}
+
+var runScript = async function() {
+    const response = await window.fcl.send([
+      window.fcl.script(document.getElementById('script').value),
+    ]);
+    var r  = await window.fcl.decode(response);
+    document.getElementById('runScriptResponse').innerText = JSON.stringify(r);
+}
+
+var setStatus = function(status){
+    document.getElementById('sendTransactionResponse').innerText = status;
+}
+
+var sendTransaction = async function() {
+    const response = await window.fcl.send([
+      window.fcl.script(document.getElementById('script').value),
+    ]);
+
+    setStatus("Resolving...")
+
+    const blockResponse = await window.fcl.send([
+      window.fcl.getLatestBlock(),
+    ])
+
+    const block = await window.fcl.decode(blockResponse)
+
+    try {
+      const { transactionId } = await window.fcl.send([
+        window.fcl.transaction(document.getElementById('transaction').value),
+        window.fcl.proposer(window.fcl.currentUser().authorization),
+        window.fcl.payer(window.fcl.currentUser().authorization),
+        window.fcl.ref(block.id),
+      ])
+
+      setStatus("Transaction sent, waiting for confirmation")
+
+      const unsub = fcl
+        .tx({ transactionId })
+        .subscribe(transaction => {
+
+          if (window.fcl.tx.isSealed(transaction)) {
+            setStatus("Transaction is Sealed")
+            unsub()
+          }
+        })
+    } catch (error) {
+      console.error(error);
+      setStatus("Transaction failed")
+    }
+ }
+
+
+</script>
+
+</body>
+</html> 
